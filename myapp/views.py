@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from .models import Book
+from .models import Book,Purchase
 from .serializers import BookSerializer
 
 @api_view(['POST'])
@@ -80,6 +80,23 @@ def get_all_books(request):
 def getall_books(request):
     books = Book.objects.all()
     serializer = BookSerializer(books, many=True)
-    return Response(serializer.data)          
+    return Response(serializer.data)  
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def buy_book(request):
+    book_id = request.data.get('book_id')
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return Response({"error": "Book not found."}, status=404)
+    Purchase.objects.create(user=request.user, book=book)
+    return Response({
+        "message": f"You bought '{book.title}'",
+        "book": {
+            "title": book.title,
+            "author": book.author
+        }
+    })        
 
 
